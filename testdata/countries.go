@@ -3,27 +3,39 @@
 package countries
 
 // type definition
-type (
-	Country struct {
-		name string
-	}
-)
+type Country struct {
+	name      string
+	shorthand string
+	continent string
+}
 
 // countries
 var (
 	TR = Country{
-		name: "a",
+		name: "Turkey",
 	}
-	CD = Country{
-		name: "a",
+
+	NL = Country{
+		name: "The Netherlands",
+	}
+
+	JP = Country{
+		name: "Japan",
 	}
 )
 
 func (c Country) Name() string {
 	return c.name
 }
+
+func (c Country) Shorthand() string {
+	return c.shorthand
+}
+
+func (c Country) Continent() string {
+	return c.continent
+}
+
 func AllCountries() []Country {
-	return []Country{
-		TR,
-	}
+	return []Country{TR, NL, JP}
 }
