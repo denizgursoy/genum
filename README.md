@@ -14,7 +14,7 @@
 // Value: TR -> Turkey -> Asia -> 90 -> true
 // Value: JP -> Japan -> Asia -> 81 -> true
 // Value: CA -> Canada -> North America -> 1 -> true
-// Value: SN -> Senegal -> Afrika -> 221 -> false
+// Value: SN -> Senegal -> Africa -> 221 -> false
 ```
 
 ## Execute genum
@@ -61,7 +61,7 @@ var (
 
 	SN = Country{
 		name:      "Senegal",
-		continent: "Afrika",
+		continent: "Africa",
 		code:      221,
 		isInG20:   false,
 	}
