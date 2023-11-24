@@ -1,6 +1,10 @@
 package main
 
-import "github.com/dave/jennifer/jen"
+import (
+	"strings"
+
+	"github.com/dave/jennifer/jen"
+)
 
 type (
 	EnumType struct {
@@ -60,11 +64,19 @@ func getAllFunction(structName string, vals EnumValues) []jen.Code {
 func (f FieldTypes) toCode() []jen.Code {
 	statements := make([]jen.Code, 0)
 	for _, fieldType := range f {
-		id := jen.Id(lower.String(fieldType.Name)).Id(fieldType.Type)
+		id := jen.Id(convertFieldName(fieldType.Name)).Id(fieldType.Type)
 		statements = append(statements, id)
 	}
 
 	return statements
+}
+
+func convertFieldName(fieldName string) string {
+	if len(fieldName) < 1 {
+		return fieldName
+	}
+
+	return strings.ToLower(fieldName[:1]) + fieldName[1:]
 }
 
 func (f FieldTypes) toGetterCodes(structName string) []jen.Code {
@@ -100,7 +112,7 @@ func (r FieldValues) toCode() []jen.Code {
 	statements := make([]jen.Code, 0)
 
 	for _, value := range r {
-		code := jen.Id(value.Name).Id(":").Lit(value.Value).Id(",")
+		code := jen.Id(convertFieldName(value.Name)).Id(":").Lit(value.Value).Id(",")
 		statements = append(statements, code)
 	}
 

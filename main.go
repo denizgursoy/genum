@@ -1,10 +1,15 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/dave/jennifer/jen"
 	"github.com/gertd/go-pluralize"
@@ -14,8 +19,13 @@ import (
 
 var (
 	titleCaser = cases.Title(language.English)
-	lower      = cases.Lower(language.English)
 	pul        = pluralize.NewClient()
+)
+
+const (
+	EnumCommentStart  = "Enum: "
+	FieldCommentStart = "Field: "
+	ValueCommentStart = "Value: "
 )
 
 func main() {
@@ -25,14 +35,20 @@ func main() {
 	flag.Parse()
 	if err := validate(source, destination, pkg); err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 
-	types := parseSource()
+	types, err := parseSource(*source)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
 
 	content := generate(types, *pkg)
 
 	if err := write(*destination, content); err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 }
 
@@ -40,54 +56,90 @@ func validate(source, destination, pkg *string) error {
 	return nil
 }
 
-func parseSource() []EnumType {
-	return []EnumType{
-		{
-			name: "country",
-			fields: FieldTypes{
-				{
-					Name: "name",
-					Type: "string",
-				},
-				{
-					Name: "shorthand",
-					Type: "string",
-				},
-				{
-					Name: "continent",
-					Type: "string",
-				},
-			},
-			enumValues: []EnumValue{
-				{
-					Name: "TR",
-					fields: FieldValues{
-						{
-							Name:  "name",
-							Value: "Turkey",
-						},
-					},
-				},
-				{
-					Name: "NL",
-					fields: FieldValues{
-						{
-							Name:  "name",
-							Value: "The Netherlands",
-						},
-					},
-				},
-				{
-					Name: "JP",
-					fields: FieldValues{
-						{
-							Name:  "name",
-							Value: "Japan",
-						},
-					},
-				},
-			},
-		},
+func parseSource(source string) ([]EnumType, error) {
+	set := token.NewFileSet()
+	f, err := parser.ParseFile(set, source, nil, parser.ParseComments)
+	if err != nil {
+		return nil, err
+	}
+	etypes := make([]EnumType, 0)
+	for _, comment := range f.Comments {
+		enumType, err := commentToEnumType(comment.Text())
+		if err != nil {
+			continue
+		}
+		etypes = append(etypes, enumType)
+	}
+	return etypes, nil
+}
+
+func commentToEnumType(comment string) (EnumType, error) {
+	lines := strings.Split(comment, "\n")
+	fmt.Println(lines)
+
+	e := EnumType{
+		fields:     make(FieldTypes, 0),
+		enumValues: make(EnumValues, 0),
+	}
+
+	for i := 0; i < len(lines); i++ {
+		if strings.HasPrefix(lines[i], EnumCommentStart) {
+			enumName := strings.TrimPrefix(lines[i], EnumCommentStart)
+			e.name = strings.ReplaceAll(enumName, " ", "")
+
+			for j := i + 1; j < len(lines); j++ {
+				if strings.HasPrefix(lines[j], FieldCommentStart) {
+					field := strings.TrimPrefix(lines[j], FieldCommentStart)
+					split := strings.Split(field, " -> ")
+					if len(split) >= 2 {
+						e.fields = append(e.fields, FieldType{
+							Name: split[0],
+							Type: split[1],
+						})
+					} else {
+						return EnumType{}, errors.New("sd")
+					}
+				} else if strings.HasPrefix(lines[j], ValueCommentStart) {
+					values := strings.TrimPrefix(lines[j], ValueCommentStart)
+					split := strings.Split(values, " -> ")
+					vals := split[1:]
+					fieldLength := len(e.fields)
+					filedVals := make([]FieldValue, 0)
+					for k := 0; k < fieldLength; k++ {
+						filedVals = append(filedVals, FieldValue{
+							Name:  e.fields[k].Name,
+							Value: convert(e.fields[k].Type, vals[k]),
+						})
+					}
+					e.enumValues = append(e.enumValues, EnumValue{
+						Name:   split[0],
+						fields: filedVals,
+					})
+					fmt.Println(values, fieldLength, split)
+				}
+			}
+		}
+	}
+
+	return e, nil
+}
+
+func convert(valueType, value string) any {
+	switch valueType {
+	case "string":
+		return value
+	case "int", "int64", "int32", "int16", "int8", "uint", "uint32", "uint64", "uint16":
+		intValue, _ := strconv.Atoi(value)
+		return intValue
+	case "float64", "float32":
+		floatValue, _ := strconv.ParseFloat(value, 64)
+		return floatValue
+	case "bool":
+		boolValue, _ := strconv.ParseBool(value)
+		return boolValue
+	default:
+		fmt.Println("Unsupported type")
+		return nil
 	}
 }
 
