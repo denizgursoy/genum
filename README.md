@@ -2,7 +2,7 @@
 `genum` is an experimental go enumeration implementation.
 
 ## Install
-`go install github.com/denizgursoy/genum@latest`
+`go install github.com/denizgursoy/genum`
 
 ## Write comment to a source file in the format
 ```go

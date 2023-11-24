@@ -30,7 +30,7 @@ const (
 
 func main() {
 	source := flag.String("source", ".", "path of source file")
-	destination := flag.String("destination", ".", "path of destination file")
+	destination := flag.String("destination", "enum.go", "path of destination file")
 	pkg := flag.String("package", "enums", "path of destination file")
 	flag.Parse()
 	if err := validate(source, destination, pkg); err != nil {
