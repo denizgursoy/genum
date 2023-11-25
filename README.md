@@ -79,12 +79,12 @@ func (c Country) Code() int {
 	return c.code
 }
 
-func (c Country) Ising20() bool {
+func (c Country) IsInG20() bool {
 	return c.isInG20
 }
 
-func AllCountries() []Country {
-	return []Country{TR, JP, CA, SN}
+func AllCountries() [4]Country {
+	return [4]Country{TR, JP, CA, SN}
 }
 
 
