@@ -7,6 +7,26 @@ import (
 	"strings"
 )
 
+const GoFileExtension = ".go"
+
+func validate(source, destination, pkg *string) error {
+	if err := validateSource(source); err != nil {
+		return err
+	}
+	if err := validateFileName(destination); err != nil {
+		return err
+	}
+	if pkg == nil {
+		return errors.New("package cannot be nil")
+	}
+	*pkg = strings.TrimSpace(*pkg)
+	if len(*pkg) == 0 {
+		return errors.New("pkg must be set")
+	}
+
+	return nil
+}
+
 func validateSource(source *string) error {
 	if err := validateFileName(source); err != nil {
 		return fmt.Errorf("source is not valid: %w", err)
