@@ -5,22 +5,39 @@ package countries
 // type definition
 type Country struct {
 	name      string
-	shorthand string
 	continent string
+	code      int
+	isInG20   bool
 }
 
-// countries
+// Countries
 var (
 	TR = Country{
-		name: "Turkey",
-	}
-
-	NL = Country{
-		name: "The Netherlands",
+		name:      "Turkey",
+		continent: "Asia",
+		code:      90,
+		isInG20:   true,
 	}
 
 	JP = Country{
-		name: "Japan",
+		name:      "Japan",
+		continent: "Asia",
+		code:      81,
+		isInG20:   true,
+	}
+
+	CA = Country{
+		name:      "Canada",
+		continent: "North America",
+		code:      1,
+		isInG20:   true,
+	}
+
+	SN = Country{
+		name:      "Senegal",
+		continent: "Africa",
+		code:      221,
+		isInG20:   false,
 	}
 )
 
@@ -28,14 +45,18 @@ func (c Country) Name() string {
 	return c.name
 }
 
-func (c Country) Shorthand() string {
-	return c.shorthand
-}
-
 func (c Country) Continent() string {
 	return c.continent
 }
 
-func AllCountries() []Country {
-	return []Country{TR, NL, JP}
+func (c Country) Code() int {
+	return c.code
+}
+
+func (c Country) IsInG20() bool {
+	return c.isInG20
+}
+
+func AllCountries() [4]Country {
+	return [4]Country{TR, JP, CA, SN}
 }

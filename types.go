@@ -1,8 +1,6 @@
 package main
 
 import (
-	"strings"
-
 	"github.com/dave/jennifer/jen"
 )
 
@@ -34,12 +32,12 @@ type (
 )
 
 func (r EnumType) toCode() []jen.Code {
-	structName := titleCaser.String(r.name)
-
+	structName := MakeFirstLetterUpperCase(r.name)
+	pluralStructName := MakePlural(structName)
 	add := jen.
 		Comment("type definition").Line().
 		Type().Id(structName).Struct(r.fields.toCode()...).Line().
-		Comment(pul.Plural(r.name)).Line().
+		Comment(pluralStructName).Line().
 		Var().Defs(r.enumValues.toCode(structName)...).Line().
 		Add(r.fields.toGetterCodes(structName)...).
 		Add(getAllFunction(structName, r.enumValues)...)
@@ -49,14 +47,14 @@ func (r EnumType) toCode() []jen.Code {
 
 func getAllFunction(structName string, vals EnumValues) []jen.Code {
 	all := make([]jen.Code, 0)
+	count := len(vals)
 	for _, val := range vals {
 		a := jen.Id(val.Name)
 		all = append(all, a)
 	}
-	t := pul.Plural(titleCaser.String(structName))
-	a := jen.Func().Id("All" + t).
-		Params().Index().Id(structName).
-		Block(jen.Return(jen.Index().Id(structName).Values(all...)))
+	a := jen.Func().Id("All" + MakePlural(structName)).
+		Params().Index(jen.Lit(count)).Id(structName).
+		Block(jen.Return(jen.Index(jen.Lit(count)).Id(structName).Values(all...)))
 
 	return *a
 }
@@ -64,26 +62,18 @@ func getAllFunction(structName string, vals EnumValues) []jen.Code {
 func (f FieldTypes) toCode() []jen.Code {
 	statements := make([]jen.Code, 0)
 	for _, fieldType := range f {
-		id := jen.Id(convertFieldName(fieldType.Name)).Id(fieldType.Type)
+		id := jen.Id(MakeFirstLetterLowerCase(fieldType.Name)).Id(fieldType.Type)
 		statements = append(statements, id)
 	}
 
 	return statements
 }
 
-func convertFieldName(fieldName string) string {
-	if len(fieldName) < 1 {
-		return fieldName
-	}
-
-	return strings.ToLower(fieldName[:1]) + fieldName[1:]
-}
-
 func (f FieldTypes) toGetterCodes(structName string) []jen.Code {
 	statements := make([]jen.Code, 0)
 	for _, fieldType := range f {
 
-		id := jen.Func().Params(jen.Id("c").Id(structName)).Id(titleCaser.String(fieldType.Name)).
+		id := jen.Func().Params(jen.Id("c").Id(structName)).Id(MakeFirstLetterUpperCase(fieldType.Name)).
 			Params().Id(fieldType.Type).Block(
 			jen.Return(jen.Id("c").Dot(fieldType.Name)),
 		).Line().Line()
@@ -112,7 +102,7 @@ func (r FieldValues) toCode() []jen.Code {
 	statements := make([]jen.Code, 0)
 
 	for _, value := range r {
-		code := jen.Id(convertFieldName(value.Name)).Id(":").Lit(value.Value).Id(",")
+		code := jen.Id(MakeFirstLetterLowerCase(value.Name)).Id(":").Lit(value.Value).Id(",")
 		statements = append(statements, code)
 	}
 
