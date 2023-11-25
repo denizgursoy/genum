@@ -2,7 +2,7 @@
 
 package countries
 
-// type definition
+// Country type definition
 type Country struct {
 	name      string
 	continent string

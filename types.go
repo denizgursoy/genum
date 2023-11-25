@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/dave/jennifer/jen"
 )
 
@@ -31,16 +33,16 @@ type (
 	}
 )
 
-func (r EnumType) toCode() []jen.Code {
-	structName := MakeFirstLetterUpperCase(r.name)
+func (e EnumType) toCode() []jen.Code {
+	structName := MakeFirstLetterUpperCase(e.name)
 	pluralStructName := MakePlural(structName)
 	add := jen.
-		Comment("type definition").Line().
-		Type().Id(structName).Struct(r.fields.toCode()...).Line().
+		Comment(fmt.Sprintf("%s type definition", structName)).Line().
+		Type().Id(structName).Struct(e.fields.toCode()...).Line().
 		Comment(pluralStructName).Line().
-		Var().Defs(r.enumValues.toCode(structName)...).Line().
-		Add(r.fields.toGetterCodes(structName)...).
-		Add(getAllFunction(structName, r.enumValues)...)
+		Var().Defs(e.enumValues.toCode(structName)...).Line().
+		Add(e.fields.toGetterCodes(structName)...).
+		Add(getAllFunction(structName, e.enumValues)...)
 
 	return *add
 }
@@ -84,10 +86,10 @@ func (f FieldTypes) toGetterCodes(structName string) []jen.Code {
 	return statements
 }
 
-func (r EnumValues) toCode(structName string) []jen.Code {
+func (e EnumValues) toCode(structName string) []jen.Code {
 	statements := make([]jen.Code, 0)
 
-	for _, value := range r {
+	for _, value := range e {
 		block := jen.Line().
 			Id(value.Name).Op("=").Id(structName).
 			Block(value.fields.toCode()...).Line()
@@ -98,10 +100,10 @@ func (r EnumValues) toCode(structName string) []jen.Code {
 	return statements
 }
 
-func (r FieldValues) toCode() []jen.Code {
+func (f FieldValues) toCode() []jen.Code {
 	statements := make([]jen.Code, 0)
 
-	for _, value := range r {
+	for _, value := range f {
 		code := jen.Id(MakeFirstLetterLowerCase(value.Name)).Id(":").Lit(value.Value).Id(",")
 		statements = append(statements, code)
 	}
