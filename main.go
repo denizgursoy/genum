@@ -8,7 +8,6 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/dave/jennifer/jen"
@@ -64,21 +63,22 @@ func validate(source, destination, pkg *string) error {
 	return nil
 }
 
-func parseSource(source string) ([]EnumType, error) {
-	set := token.NewFileSet()
-	f, err := parser.ParseFile(set, source, nil, parser.ParseComments)
+func parseSource(sourceFilePath string) ([]EnumType, error) {
+	parsedFile, err := parser.ParseFile(token.NewFileSet(), sourceFilePath, nil, parser.ParseComments)
 	if err != nil {
 		return nil, err
 	}
-	etypes := make([]EnumType, 0)
-	for _, comment := range f.Comments {
+	parsedEnums := make([]EnumType, 0)
+	for _, comment := range parsedFile.Comments {
 		enumType, err := commentToEnumType(comment.Text())
 		if err != nil {
+			fmt.Println(err.Error())
 			continue
 		}
-		etypes = append(etypes, enumType)
+		parsedEnums = append(parsedEnums, enumType)
 	}
-	return etypes, nil
+
+	return parsedEnums, nil
 }
 
 func commentToEnumType(comment string) (EnumType, error) {
@@ -114,9 +114,13 @@ func commentToEnumType(comment string) (EnumType, error) {
 					fieldLength := len(e.fields)
 					filedVals := make([]FieldValue, 0)
 					for k := 0; k < fieldLength; k++ {
+						a, err := convert(e.fields[k].Type, vals[k])
+						if err != nil {
+							return e, err
+						}
 						filedVals = append(filedVals, FieldValue{
 							Name:  e.fields[k].Name,
-							Value: convert(e.fields[k].Type, vals[k]),
+							Value: a,
 						})
 					}
 					e.enumValues = append(e.enumValues, EnumValue{
@@ -130,25 +134,6 @@ func commentToEnumType(comment string) (EnumType, error) {
 	}
 
 	return e, nil
-}
-
-func convert(valueType, value string) any {
-	switch valueType {
-	case "string":
-		return value
-	case "int", "int64", "int32", "int16", "int8", "uint", "uint32", "uint64", "uint16":
-		intValue, _ := strconv.Atoi(value)
-		return intValue
-	case "float64", "float32":
-		floatValue, _ := strconv.ParseFloat(value, 64)
-		return floatValue
-	case "bool":
-		boolValue, _ := strconv.ParseBool(value)
-		return boolValue
-	default:
-		fmt.Println("Unsupported type")
-		return nil
-	}
 }
 
 func generate(t []EnumType, pkg string) string {

@@ -6,9 +6,7 @@ import (
 	"github.com/gertd/go-pluralize"
 )
 
-var (
-	pul = pluralize.NewClient()
-)
+var pul = pluralize.NewClient()
 
 func MakePlural(name string) string {
 	return pul.Plural(name)
