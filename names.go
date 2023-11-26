@@ -35,3 +35,7 @@ func GetFirstLetterInLowerCase(name string) string {
 
 	return strings.ToLower(name[:1])
 }
+
+func GetAllFunctionName(structName string) string {
+	return "All" + MakePlural(structName)
+}

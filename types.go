@@ -90,7 +90,7 @@ func getAllFunction(structName string, vals EnumValues) []jen.Code {
 		a := jen.Id(val.Name)
 		all = append(all, a)
 	}
-	a := jen.Func().Id("All" + MakePlural(structName)).
+	a := jen.Func().Id(GetAllFunctionName(structName)).
 		Params().Index(jen.Lit(count)).Id(structName).
 		Block(jen.Return(jen.Index(jen.Lit(count)).Id(structName).Values(all...)))
 
@@ -130,13 +130,33 @@ func (f FieldTypes) GetMethods(structName string) []jen.Code {
 
 	// add json Marshall method
 	variableNameToBeEncoded := "val"
-	marshallFunction := jen.Func().Params(jen.Id(receiverName).
-		Id(structName)).Id("MarshalJSON").Params().Params(
+	marshallFunction := jen.Func().Params(jen.Id(receiverName).Id(structName)).
+		Id("MarshalJSON").Params().Params(
 		jen.Index().Byte(), jen.Error()).Block(
-		jen.Id(variableNameToBeEncoded).Id(":=").Id(receiverName).Dot(OrdinalField).Line().Line().
+		jen.Id(variableNameToBeEncoded).Op(":=").Id(receiverName).Dot(OrdinalField).Line().Line().
 			Return(jen.Qual("encoding/json", "Marshal").Params(jen.Id(variableNameToBeEncoded))),
 	).Line().Line()
+
 	statements = append(statements, marshallFunction)
+
+	unmarshallFunction := jen.Func().Params(jen.Id(receiverName).Op("*").Id(structName)).
+		Id("UnmarshalJSON").Params(jen.Id("bytes").Index().Byte()).Error().Block(
+		jen.Id("str").Op(":=").String().Params(jen.Id("bytes")).Line().
+			Id("num,err").Op(":=").Qual("strconv", "Atoi").Call(jen.Id("str")).Line().
+			If(jen.Id("err").Op("!=").Id("nil")).
+			Block(jen.Return(jen.Id("err"))).Line().
+			For(
+				jen.Id("_").Op(",").Id("eval").Op(":=").
+					Range().Id(GetAllFunctionName(structName)).Call().Block(
+					jen.If(jen.Id("eval").Dot(OrdinalField).Op("==").Id("num")).Block(
+						jen.Id("*").Id(receiverName).Op("=").Id("eval").Line().Break().Line(),
+					),
+				),
+			).Line().Line().
+			Return(jen.Nil()),
+	).Line().Line()
+
+	statements = append(statements, unmarshallFunction)
 
 	return statements
 }
@@ -159,7 +179,8 @@ func (f FieldValues) toCode() []jen.Code {
 	statements := make([]jen.Code, 0)
 
 	for _, value := range f {
-		code := jen.Id(MakeFirstLetterLowerCase(value.Name)).Id(":").Lit(value.Value).Id(",")
+		// TODO use values
+		code := jen.Id(MakeFirstLetterLowerCase(value.Name)).Op(":").Lit(value.Value).Id(",")
 		statements = append(statements, code)
 	}
 
