@@ -33,7 +33,26 @@ type (
 	}
 )
 
-func (e EnumType) toCode() []jen.Code {
+const (
+	OrdinalField      = "_ordinal"
+	NameField         = "_name"
+	DefaultFieldCount = 2
+)
+
+var (
+	defaultFields = []FieldType{
+		{
+			Name: OrdinalField,
+			Type: Int,
+		},
+		{
+			Name: NameField,
+			Type: String,
+		},
+	}
+)
+
+func (e *EnumType) toCode() []jen.Code {
 	structName := MakeFirstLetterUpperCase(e.name)
 	pluralStructName := MakePlural(structName)
 	add := jen.
@@ -41,10 +60,27 @@ func (e EnumType) toCode() []jen.Code {
 		Type().Id(structName).Struct(e.fields.toCode()...).Line().
 		Comment(pluralStructName).Line().
 		Var().Defs(e.enumValues.toCode(structName)...).Line().
-		Add(e.fields.toGetterCodes(structName)...).
+		Add(e.fields.GetMethods(structName)...).
 		Add(getAllFunction(structName, e.enumValues)...)
 
 	return *add
+}
+
+func (e *EnumType) addDefaultTypes() {
+	e.fields = append(e.fields, defaultFields...)
+}
+
+func getDefaultValues(ordinal int, name string) []FieldValue {
+	return []FieldValue{
+		{
+			Name:  OrdinalField,
+			Value: ordinal,
+		},
+		{
+			Name:  NameField,
+			Value: name,
+		},
+	}
 }
 
 func getAllFunction(structName string, vals EnumValues) []jen.Code {
@@ -71,10 +107,10 @@ func (f FieldTypes) toCode() []jen.Code {
 	return statements
 }
 
-func (f FieldTypes) toGetterCodes(structName string) []jen.Code {
+func (f FieldTypes) GetMethods(structName string) []jen.Code {
 	statements := make([]jen.Code, 0)
-	for _, fieldType := range f {
-
+	for i := DefaultFieldCount; i < len(f); i++ {
+		fieldType := f[i]
 		id := jen.Func().Params(jen.Id("c").Id(structName)).Id(MakeFirstLetterUpperCase(fieldType.Name)).
 			Params().Id(fieldType.Type).Block(
 			jen.Return(jen.Id("c").Dot(fieldType.Name)),
@@ -82,6 +118,14 @@ func (f FieldTypes) toGetterCodes(structName string) []jen.Code {
 
 		statements = append(statements, id)
 	}
+
+	// add stringer methods
+	stringerMethod := jen.Func().Params(jen.Id("c").Id(structName)).Id(MakeFirstLetterUpperCase("String")).
+		Params().Id("string").Block(
+		jen.Return(jen.Qual("strconv", "Itoa").Call(jen.Id("c").Dot(OrdinalField))),
+	).Line().Line()
+
+	statements = append(statements, stringerMethod)
 
 	return statements
 }

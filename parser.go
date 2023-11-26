@@ -42,11 +42,12 @@ func commentToEnumType(comment string) (EnumType, error) {
 		enumValues: make(EnumValues, 0),
 	}
 
+	e.addDefaultTypes()
 	for i := 0; i < len(lines); i++ {
 		if strings.HasPrefix(lines[i], EnumCommentStart) {
 			enumName := strings.TrimPrefix(lines[i], EnumCommentStart)
 			e.name = strings.ReplaceAll(enumName, " ", "")
-
+			fieldCount := 0
 			for j := i + 1; j < len(lines); j++ {
 				if strings.HasPrefix(lines[j], FieldCommentStart) {
 					field := strings.TrimPrefix(lines[j], FieldCommentStart)
@@ -64,20 +65,22 @@ func commentToEnumType(comment string) (EnumType, error) {
 					split := strings.Split(values, " -> ")
 					vals := split[1:]
 					fieldLength := len(e.fields)
-					filedVals := make([]FieldValue, 0)
-					for k := 0; k < fieldLength; k++ {
-						a, err := convert(e.fields[k].Type, vals[k])
+					fieldVals := make([]FieldValue, 0)
+					fieldVals = append(fieldVals, getDefaultValues(fieldCount, split[0])...)
+					fieldCount++
+					for k := DefaultFieldCount; k < fieldLength; k++ {
+						a, err := convert(e.fields[k].Type, vals[k-DefaultFieldCount])
 						if err != nil {
 							return e, err
 						}
-						filedVals = append(filedVals, FieldValue{
+						fieldVals = append(fieldVals, FieldValue{
 							Name:  e.fields[k].Name,
 							Value: a,
 						})
 					}
 					e.enumValues = append(e.enumValues, EnumValue{
 						Name:   split[0],
-						fields: filedVals,
+						fields: fieldVals,
 					})
 					fmt.Println(values, fieldLength, split)
 				}
