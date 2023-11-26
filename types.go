@@ -39,18 +39,16 @@ const (
 	DefaultFieldCount = 2
 )
 
-var (
-	defaultFields = []FieldType{
-		{
-			Name: OrdinalField,
-			Type: Int,
-		},
-		{
-			Name: NameField,
-			Type: String,
-		},
-	}
-)
+var defaultFields = []FieldType{
+	{
+		Name: OrdinalField,
+		Type: Int,
+	},
+	{
+		Name: NameField,
+		Type: String,
+	},
+}
 
 func (e *EnumType) toCode() []jen.Code {
 	structName := MakeFirstLetterUpperCase(e.name)
@@ -124,36 +122,37 @@ func (f FieldTypes) GetMethods(structName string) []jen.Code {
 	// add stringer methods
 	stringerMethod := jen.Func().Params(jen.Id(receiverName).Id(structName)).Id("String").
 		Params().Id("string").Block(
-		jen.Return(jen.Qual("strconv", "Itoa").Call(jen.Id(receiverName).Dot(OrdinalField))),
+		jen.Return(jen.Id(receiverName).Dot(NameField)),
 	).Line().Line()
 	statements = append(statements, stringerMethod)
 
 	// add json Marshall method
-	variableNameToBeEncoded := "val"
 	marshallFunction := jen.Func().Params(jen.Id(receiverName).Id(structName)).
 		Id("MarshalJSON").Params().Params(
 		jen.Index().Byte(), jen.Error()).Block(
-		jen.Id(variableNameToBeEncoded).Op(":=").Id(receiverName).Dot(OrdinalField).Line().Line().
-			Return(jen.Qual("encoding/json", "Marshal").Params(jen.Id(variableNameToBeEncoded))),
+		jen.Return(jen.Qual("encoding/json", "Marshal").Params(jen.Id(receiverName).Dot(NameField))),
 	).Line().Line()
 
 	statements = append(statements, marshallFunction)
 
 	unmarshallFunction := jen.Func().Params(jen.Id(receiverName).Op("*").Id(structName)).
 		Id("UnmarshalJSON").Params(jen.Id("bytes").Index().Byte()).Error().Block(
-		jen.Id("str").Op(":=").String().Params(jen.Id("bytes")).Line().
-			Id("num,err").Op(":=").Qual("strconv", "Atoi").Call(jen.Id("str")).Line().
-			If(jen.Id("err").Op("!=").Id("nil")).
-			Block(jen.Return(jen.Id("err"))).Line().
+		jen.Id(NameField).Op(":=").Lit("").Line().
+			If(jen.Id("err").Op(":=").Qual("encoding/json", "Unmarshal").
+				Call(jen.Id("bytes"), jen.Op("&").Id(NameField)).Op(";").
+				Id("err").Op("!=").Nil().Block(
+				jen.Return(jen.Id("err")),
+			)).Line().
 			For(
 				jen.Id("_").Op(",").Id("eval").Op(":=").
 					Range().Id(GetAllFunctionName(structName)).Call().Block(
-					jen.If(jen.Id("eval").Dot(OrdinalField).Op("==").Id("num")).Block(
-						jen.Id("*").Id(receiverName).Op("=").Id("eval").Line().Break().Line(),
+					jen.If(jen.Id("eval").Dot(NameField).Op("==").Id(NameField)).Block(
+						jen.Id("*").Id(receiverName).Op("=").Id("eval").Line().
+							Return(jen.Nil()),
 					),
 				),
 			).Line().Line().
-			Return(jen.Nil()),
+			Return(jen.Qual("errors", "New").Call(jen.Lit("enum does not exist"))),
 	).Line().Line()
 
 	statements = append(statements, unmarshallFunction)
