@@ -27,3 +27,11 @@ func MakeFirstLetterUpperCase(name string) string {
 
 	return strings.ToUpper(name[:1]) + name[1:]
 }
+
+func GetFirstLetterInLowerCase(name string) string {
+	if len(name) < 1 {
+		return name
+	}
+
+	return strings.ToLower(name[:1])
+}

@@ -109,23 +109,34 @@ func (f FieldTypes) toCode() []jen.Code {
 
 func (f FieldTypes) GetMethods(structName string) []jen.Code {
 	statements := make([]jen.Code, 0)
+	receiverName := GetFirstLetterInLowerCase(structName)
+
 	for i := DefaultFieldCount; i < len(f); i++ {
 		fieldType := f[i]
-		id := jen.Func().Params(jen.Id("c").Id(structName)).Id(MakeFirstLetterUpperCase(fieldType.Name)).
+		id := jen.Func().Params(jen.Id(receiverName).Id(structName)).Id(MakeFirstLetterUpperCase(fieldType.Name)).
 			Params().Id(fieldType.Type).Block(
-			jen.Return(jen.Id("c").Dot(fieldType.Name)),
+			jen.Return(jen.Id(receiverName).Dot(fieldType.Name)),
 		).Line().Line()
 
 		statements = append(statements, id)
 	}
 
 	// add stringer methods
-	stringerMethod := jen.Func().Params(jen.Id("c").Id(structName)).Id(MakeFirstLetterUpperCase("String")).
+	stringerMethod := jen.Func().Params(jen.Id(receiverName).Id(structName)).Id("String").
 		Params().Id("string").Block(
-		jen.Return(jen.Qual("strconv", "Itoa").Call(jen.Id("c").Dot(OrdinalField))),
+		jen.Return(jen.Qual("strconv", "Itoa").Call(jen.Id(receiverName).Dot(OrdinalField))),
 	).Line().Line()
-
 	statements = append(statements, stringerMethod)
+
+	// add json Marshall method
+	variableNameToBeEncoded := "val"
+	marshallFunction := jen.Func().Params(jen.Id(receiverName).
+		Id(structName)).Id("MarshalJSON").Params().Params(
+		jen.Index().Byte(), jen.Error()).Block(
+		jen.Id(variableNameToBeEncoded).Id(":=").Id(receiverName).Dot(OrdinalField).Line().Line().
+			Return(jen.Qual("encoding/json", "Marshal").Params(jen.Id(variableNameToBeEncoded))),
+	).Line().Line()
+	statements = append(statements, marshallFunction)
 
 	return statements
 }
