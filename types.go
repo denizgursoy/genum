@@ -126,6 +126,13 @@ func (f FieldTypes) GetMethods(structName string) []jen.Code {
 	).Line().Line()
 	statements = append(statements, stringerMethod)
 
+	// add isValid methods
+	isValidMethod := jen.Func().Params(jen.Id(receiverName).Id(structName)).Id("IsValid").
+		Params().Id("bool").Block(
+		jen.Return(jen.Id(receiverName).Op("!=").Id(structName).Block()),
+	).Line().Line()
+	statements = append(statements, isValidMethod)
+
 	// add json Marshall method
 	marshallFunction := jen.Func().Params(jen.Id(receiverName).Id(structName)).
 		Id("MarshalJSON").Params().Params(
