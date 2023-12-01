@@ -18,14 +18,20 @@ func main() {
 
 	types, err := parseSource(*source)
 	if err != nil {
-		fmt.Println(err.Error())
+		PrintError(err.Error())
 		return
+	}
+
+	for _, enumType := range types {
+		PrintSuccess(fmt.Sprintf("%s type is found", enumType.name))
 	}
 
 	content := generate(types, *pkg)
 
 	if err := write(*destination, content); err != nil {
-		fmt.Println(err.Error())
+		PrintError(err.Error())
 		return
 	}
+
+	PrintSuccess(fmt.Sprintf("%s is created", *destination))
 }

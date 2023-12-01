@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"go/parser"
 	"go/token"
 	"strings"
@@ -24,7 +23,7 @@ func parseSource(sourceFilePath string) ([]EnumType, error) {
 	for _, comment := range parsedFile.Comments {
 		enumType, err := commentToEnumType(comment.Text())
 		if err != nil {
-			fmt.Println(err.Error())
+			PrintError(err.Error())
 			continue
 		}
 		parsedEnums = append(parsedEnums, enumType)
@@ -35,8 +34,6 @@ func parseSource(sourceFilePath string) ([]EnumType, error) {
 
 func commentToEnumType(comment string) (EnumType, error) {
 	lines := strings.Split(comment, "\n")
-	fmt.Println(lines)
-
 	e := EnumType{
 		fields:     make(FieldTypes, 0),
 		enumValues: make(EnumValues, 0),
@@ -82,7 +79,6 @@ func commentToEnumType(comment string) (EnumType, error) {
 						Name:   split[0],
 						fields: fieldVals,
 					})
-					fmt.Println(values, fieldLength, split)
 				}
 			}
 		}
