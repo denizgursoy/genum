@@ -22,10 +22,6 @@ func main() {
 		return
 	}
 
-	for _, enumType := range types {
-		PrintSuccess(fmt.Sprintf("%s type is found", enumType.name))
-	}
-
 	content := generate(types, *pkg)
 
 	if err := write(*destination, content); err != nil {

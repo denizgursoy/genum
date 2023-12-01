@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/gertd/go-pluralize"
+	"github.com/iancoleman/strcase"
 )
 
 var pul = pluralize.NewClient()
@@ -38,4 +39,12 @@ func GetFirstLetterInLowerCase(name string) string {
 
 func GetAllFunctionName(structName string) string {
 	return "All" + MakePlural(structName)
+}
+
+func SanitizeFieldName(name string) string {
+	return strcase.ToLowerCamel(name)
+}
+
+func SanitizeEnumName(name string) string {
+	return strcase.ToCamel(name)
 }

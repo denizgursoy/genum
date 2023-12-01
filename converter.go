@@ -65,5 +65,10 @@ func convert(valueType, value string) (any, error) {
 		return nil, fmt.Errorf("%s is not a supported type", valueType)
 	}
 
-	return converter(value)
+	parsedValue, err := converter(value)
+	if err != nil {
+		return nil, fmt.Errorf("could not parse %s as %s :%w", value, valueType, err)
+	}
+
+	return parsedValue, nil
 }
