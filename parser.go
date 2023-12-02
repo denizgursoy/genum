@@ -35,37 +35,60 @@ func parseSource(sourceFilePath string) ([]EnumType, error) {
 func commentToEnumType(comment string) ([]EnumType, error) {
 	enums := make([]EnumType, 0)
 	lines := strings.Split(comment, "\n")
+	enumStartIndexes := make([]int, 0)
 	for i := 0; i < len(lines); i++ {
 		if strings.HasPrefix(lines[i], EnumCommentStart) {
-			e := EnumType{
-				fields:     make(FieldTypes, 0),
-				enumValues: make(EnumValues, 0),
+			enumStartIndexes = append(enumStartIndexes, i)
+		}
+	}
+
+	if len(enumStartIndexes) != 0 {
+		for i := 0; i < len(enumStartIndexes); i++ {
+			start := enumStartIndexes[i]
+			end := len(lines)
+
+			if i != len(enumStartIndexes)-1 {
+				end = enumStartIndexes[i+1]
 			}
-			e.addDefaultTypes()
-			e.name = parseEnumName(lines[i])
-			PrintSuccess(fmt.Sprintf("%s type is found", e.name))
-			valueCount := 0
-			for j := i + 1; j < len(lines); j++ {
-				if strings.HasPrefix(lines[j], FieldCommentStart) {
-					field, err := parseField(lines[j])
-					if err != nil {
-						return nil, err
-					}
-					e.fields = append(e.fields, field)
-				} else if strings.HasPrefix(lines[j], ValueCommentStart) {
-					value, err := parseValue(lines[j], e.fields, valueCount)
-					if err != nil {
-						return nil, err
-					}
-					e.enumValues = append(e.enumValues, value)
-					valueCount++
-				}
+
+			emum, err := parseEmum(lines[start:end])
+			if err != nil {
+				return nil, err
 			}
-			enums = append(enums, e)
+			enums = append(enums, emum)
 		}
 	}
 
 	return enums, nil
+}
+
+func parseEmum(lines []string) (EnumType, error) {
+	e := EnumType{
+		fields:     make(FieldTypes, 0),
+		enumValues: make(EnumValues, 0),
+	}
+	e.addDefaultTypes()
+	e.name = parseEnumName(lines[0])
+	PrintSuccess(fmt.Sprintf("%s type is found", e.name))
+	valueCount := 0
+	for j := 1; j < len(lines); j++ {
+		if strings.HasPrefix(lines[j], FieldCommentStart) {
+			field, err := parseField(lines[j])
+			if err != nil {
+				return EnumType{}, err
+			}
+			e.fields = append(e.fields, field)
+		} else if strings.HasPrefix(lines[j], ValueCommentStart) {
+			value, err := parseValue(lines[j], e.fields, valueCount)
+			if err != nil {
+				return EnumType{}, err
+			}
+			e.enumValues = append(e.enumValues, value)
+			valueCount++
+		}
+	}
+
+	return e, nil
 }
 
 func parseEnumName(line string) string {
@@ -113,6 +136,7 @@ func parseValue(line string, fields FieldTypes, ordinal int) (EnumValue, error) 
 			Value: parsedValue,
 		})
 	}
+
 	return EnumValue{
 		Name:   enumName,
 		fields: fieldVals,
