@@ -133,7 +133,7 @@ func (f FieldTypes) GetMethods(structName string) []jen.Code {
 	).Line().Line()
 	statements = append(statements, isValidMethod)
 
-	// add json Marshall method
+	// add db Value method
 	valueFunction := jen.Func().Params(jen.Id(receiverName).Id(structName)).
 		Id("Value").Params().Params(
 		jen.Qual("database/sql/driver", "Value"), jen.Error()).Block(
