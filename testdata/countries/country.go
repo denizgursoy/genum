@@ -12,9 +12,10 @@ package countries
 // Enum: Status
 // Field: name -> string
 // Field: code -> int
-// Value: InProgress -> IN_PROGRESS -> 55
-// Value: Pending -> PENDING -> 78
-// Value: Blocked -> BLOCKED -> 99
-// Value: Done -> DONE -> 193
-// Value: Canceled -> CANCELED -> 45
+// Field: description -> string
+// Value: InProgress -> IN_PROGRESS -> 55 -> Records are being processed
+// Value: Pending -> PENDING -> 78 -> Waiting for approval
+// Value: Blocked -> BLOCKED -> 99 -> Blocked by external reasons
+// Value: Done -> DONE -> 193 -> Completed and tested
+// Value: Canceled -> CANCELED -> 45 -> Cancel because of time limitations
 var a = ""
