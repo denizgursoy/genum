@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/dave/jennifer/jen"
 )
@@ -141,6 +142,29 @@ func (f FieldTypes) GetMethods(structName string) []jen.Code {
 	).Line().Line()
 	statements = append(statements, valueFunction)
 
+	// add db scanner
+	scanFunction := jen.Func().Params(jen.Id(receiverName).Op("*").Id(structName)).
+		Id("Scan").Params(jen.Id("value").Any()).Params(jen.Error()).Block(
+		jen.
+			If(jen.Id("value").Op("==").Nil()).
+			Block(jen.Return(jen.Nil())).Line().
+			If(jen.Id(NameField).Op(",").Err().Op(":=").
+				Qual("database/sql/driver", "String").Dot("ConvertValue").
+				Call(jen.Id("value")).Op(";").Err().Op("==").Nil()).Block(
+			jen.For(
+				jen.Id("_").Op(",").Id("eval").Op(":=").
+					Range().Id(GetAllFunctionName(structName)).Call().Block(
+					jen.If(jen.Id("eval").Dot(NameField).Op("==").Id(NameField)).Block(
+						jen.Id("*").Id(receiverName).Op("=").Id("eval").Line().
+							Return(jen.Nil()),
+					),
+				),
+			),
+		).Line().Line().
+			Return(jen.Qual("errors", "New").Call(jen.Lit("failed to scan " + structName))),
+	).Line().Line()
+	statements = append(statements, scanFunction)
+
 	// add json Marshall method
 	marshallFunction := jen.Func().Params(jen.Id(receiverName).Id(structName)).
 		Id("MarshalJSON").Params().Params(
@@ -167,7 +191,7 @@ func (f FieldTypes) GetMethods(structName string) []jen.Code {
 					),
 				),
 			).Line().Line().
-			Return(jen.Qual("errors", "New").Call(jen.Lit("enum does not exist"))),
+			Return(jen.Qual("errors", "New").Call(jen.Lit(strings.ToLower(structName) + " does not exist"))),
 	).Line().Line()
 
 	statements = append(statements, unmarshallFunction)
